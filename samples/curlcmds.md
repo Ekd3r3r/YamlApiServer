@@ -1,0 +1,21 @@
+curl -X POST -H "Content-Type: application/x-yaml" -d '
+title: ValidApp2
+version: 1.0.1
+maintainers:
+- name: AppTwoMaintainer
+  email: apptwohotmail.com
+company: Upbound Inc.
+website: https://upbound.io
+source: https://github.com/upbound/repo
+license: Apache-2.0
+description: |
+ ### Why app 2 is the best
+ Because it simply is...
+' http://localhost:8080/metadata
+
+
+curl -X GET "http://localhost:8080/metadata?title=ValidApp2&version=1.0.1"
+
+curl -X GET "http://localhost:8080/metadata?maintainerName=AppTwoMaintainer"
+
+curl -X GET "http://localhost:8080/metadata?maintainerEmail=apptwo@hotmail.com"
