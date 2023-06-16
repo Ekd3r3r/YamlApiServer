@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v3"
 )
@@ -34,6 +35,12 @@ func (s *Server) createMetadata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Validate metadata
+	if err := s.validateMetadata(m); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	s.metadata[m.Title] = m
 	w.WriteHeader(http.StatusCreated)
 }
@@ -55,4 +62,20 @@ func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Run(addr string) {
 	http.ListenAndServe(addr, s.router)
+}
+
+func (s *Server) validateMetadata(m model.Metadata) error {
+
+	govalidator.SetFieldsRequiredByDefault(true)
+	_, err := govalidator.ValidateStruct(m)
+	if err != nil {
+		return err
+	}
+	for _, maintainer := range m.Maintainers {
+		_, err := govalidator.ValidateStruct(maintainer)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
