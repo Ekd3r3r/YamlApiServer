@@ -3,7 +3,6 @@ package server
 import (
 	"YamlApiServer/pkg/model"
 	"net/http"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
@@ -46,18 +45,54 @@ func (s *Server) createMetadata(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
+	query := r.URL.Query()
 	var result []model.Metadata
 	for _, v := range s.metadata {
-		if strings.Contains(v.Title, query) {
+		match := true
+		for key, values := range query {
+			switch key {
+			case "title":
+				match = match && (v.Title == values[0])
+			case "version":
+				match = match && (v.Version == values[0])
+			case "company":
+				match = match && (v.Company == values[0])
+			case "website":
+				match = match && (v.Website == values[0])
+			case "source":
+				match = match && (v.Source == values[0])
+			case "license":
+				match = match && (v.License == values[0])
+			case "description":
+				match = match && (v.Description == values[0])
+			case "maintainer.name":
+				maintainerMatch := false
+				for _, maintainer := range v.Maintainers {
+					if maintainer.Name == values[0] {
+						maintainerMatch = true
+					}
+				}
+				match = match && maintainerMatch
+			case "maintainer.email":
+				maintainerMatch := false
+				for _, maintainer := range v.Maintainers {
+					if maintainer.Email == values[0] {
+						maintainerMatch = true
+					}
+				}
+				match = match && maintainerMatch
+			}
+		}
+		if match {
 			result = append(result, v)
+		}
+
+		if err := yaml.NewEncoder(w).Encode(result); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 
-	if err := yaml.NewEncoder(w).Encode(result); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
 
 func (s *Server) Run(addr string) {
