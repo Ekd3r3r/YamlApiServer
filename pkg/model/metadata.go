@@ -1,12 +1,12 @@
 package model
 
 type Maintainer struct {
-	Name  string `yaml:"name" valid:"alpha"`
+	Name  string `yaml:"name" valid:"ascii"`
 	Email string `yaml:"email" valid:"email"`
 }
 
 type Metadata struct {
-	Title       string       `yaml:"title" valid:"alphanum"`
+	Title       string       `yaml:"title" valid:"ascii"`
 	Version     string       `yaml:"version" valid:"semver"`
 	Maintainers []Maintainer `yaml:"maintainers" valid:"-"`
 	Company     string       `yaml:"company" valid:"ascii"`

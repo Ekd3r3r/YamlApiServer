@@ -3,6 +3,7 @@ package server
 import (
 	"YamlApiServer/pkg/model"
 	"net/http"
+	"sync"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
@@ -10,8 +11,9 @@ import (
 )
 
 type Server struct {
-	router   *mux.Router
-	metadata map[string]model.Metadata
+	router    *mux.Router
+	metadata  map[string]model.Metadata
+	dataMutex sync.RWMutex
 }
 
 func NewServer() *Server {
@@ -40,16 +42,26 @@ func (s *Server) createMetadata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	s.dataMutex.Lock()
 	s.metadata[m.Title] = m
+	s.dataMutex.Unlock()
+
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	var result []model.Metadata
+
+	s.dataMutex.RLock()
 	for _, v := range s.metadata {
 		match := true
-		for key, values := range query {
+		for key, _ := range query {
+			values, queryExists := query[key]
+			if !queryExists {
+				continue //Query parameter not provided. Return all metadata.
+			}
+
 			switch key {
 			case "title":
 				match = match && (v.Title == values[0])
@@ -86,11 +98,12 @@ func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
 		if match {
 			result = append(result, v)
 		}
+	}
+	s.dataMutex.RUnlock()
 
-		if err := yaml.NewEncoder(w).Encode(result); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	if err := yaml.NewEncoder(w).Encode(result); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 }
