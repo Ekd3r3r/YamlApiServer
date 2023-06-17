@@ -16,6 +16,5 @@ description: |
 
 curl -X GET "http://localhost:8080/metadata?title=ValidApp2&version=1.0.1"
 
-curl -X GET "http://localhost:8080/metadata?maintainer.name=AppTwoMaintainer"
-
-curl -X GET "http://localhost:8080/metadata?maintainer.email=apptwo@hotmail.com"
+curl -X GET "http://localhost:8080/metadata?maintainerName=AppTwoMaintainer"
+curl -X GET "http://localhost:8080/metadata?maintainerEmail=apptwo@hotmail.com"
