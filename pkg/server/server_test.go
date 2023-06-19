@@ -114,7 +114,7 @@ func TestSearchMetadata(t *testing.T) {
 		},
 		{
 			description:   "Testing No query",
-			queryString:   "",
+			queryString:   "/metadata",
 			respYamlCount: 2,
 			expected:      []string{"Valid App 1", "ValidApp2"},
 		},
@@ -152,7 +152,7 @@ func TestSearchMetadata(t *testing.T) {
 		t.Logf(tc.description)
 
 		// Then, make a request to the search endpoint.
-		resp, err := http.Get(ts.URL)
+		resp, err := http.Get(ts.URL + tc.queryString)
 		if err != nil {
 			t.Fatalf("http.Get failed: %v", err)
 		}
