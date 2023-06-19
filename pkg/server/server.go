@@ -43,11 +43,25 @@ func (s *Server) createMetadata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	s.dataMutex.RLock()
+	_, exists := s.metadata[m.Title]
+	s.dataMutex.RUnlock()
+
 	s.dataMutex.Lock()
 	s.metadata[m.Title] = m
 	s.dataMutex.Unlock()
 
-	w.WriteHeader(http.StatusCreated)
+	if exists {
+		// Metadata exists, so it was updated.
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Metadata updated"))
+	} else {
+		// Metadata did not exist, so it was created.
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte("Metadata created"))
+	}
+
 }
 
 func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
