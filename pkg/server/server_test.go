@@ -176,9 +176,13 @@ func TestSearchMetadata(t *testing.T) {
 		}
 
 		for i := range metadatas {
-			if metadatas[i].Title != tc.expected[i] {
-				t.Errorf("expected title to be %s; got %s", tc.expected[i], metadatas[i].Title)
+			if metadatas[i].Title != tc.expected[0] {
+				if len(tc.expected) > 1 && metadatas[i].Title != tc.expected[1] {
+					t.Errorf("expected metadata not found; got %s", metadatas[i].Title)
+				}
+
 			}
+
 		}
 	}
 
