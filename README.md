@@ -3,10 +3,6 @@ A Golang RESTful API server for application metadata
 
 This project provides a RESTful API for managing application metadata. The API supports the following operations:
 
-## Persisting application metadata
-## Querying application metadata
-
-
 # Persisting application metadata
 To persist application metadata, send a POST request to the /metadata endpoint with a YAML payload.
 
