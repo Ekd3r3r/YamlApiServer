@@ -151,7 +151,7 @@ func TestSearchMetadata(t *testing.T) {
 
 		t.Logf(tc.description)
 
-		// Then, make a request to the search endpoint.
+		//Make a request to the search endpoint
 		resp, err := http.Get(ts.URL + tc.queryString)
 		if err != nil {
 			t.Fatalf("http.Get failed: %v", err)

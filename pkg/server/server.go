@@ -57,21 +57,18 @@ func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
 	data := s.metadata
 	s.dataMutex.RUnlock()
 
-	// If there is no query, return all entries
-	if len(query) == 0 {
-		if err := yaml.NewEncoder(w).Encode(data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
 	var result []model.Metadata
 	matchType := query.Get("matchType")
 	delete(query, "matchType") // Remove it so it doesn't interfere with our matching logic
 
 	for _, v := range data {
 		var match bool
+
+		if len(query) == 0 {
+			result = append(result, v)
+			continue
+		}
+
 		if matchType == "and" {
 			match = true // default to true for AND logic
 		}
