@@ -3,6 +3,7 @@ package server
 import (
 	"YamlApiServer/pkg/model"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/asaskevich/govalidator"
@@ -51,61 +52,106 @@ func (s *Server) createMetadata(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) searchMetadata(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	var result []model.Metadata
 
 	s.dataMutex.RLock()
-	for _, v := range s.metadata {
-		match := true
-		for key, _ := range query {
-			values, queryExists := query[key]
-			if !queryExists {
-				continue //Query parameter not provided. Return all metadata.
-			}
+	data := s.metadata
+	s.dataMutex.RUnlock()
 
+	// If there is no query, return all entries
+	if len(query) == 0 {
+		if err := yaml.NewEncoder(w).Encode(data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	var result []model.Metadata
+	matchType := query.Get("matchType")
+	delete(query, "matchType") // Remove it so it doesn't interfere with our matching logic
+
+	for _, v := range data {
+		var match bool
+		if matchType == "and" {
+			match = true // default to true for AND logic
+		}
+
+		for key, values := range query {
+			fieldMatch := false
 			switch key {
 			case "title":
-				match = match && (v.Title == values[0])
+				fieldMatch = v.Title == values[0]
 			case "version":
-				match = match && (v.Version == values[0])
+				fieldMatch = v.Version == values[0]
 			case "company":
-				match = match && (v.Company == values[0])
+				fieldMatch = v.Company == values[0]
 			case "website":
-				match = match && (v.Website == values[0])
+				fieldMatch = v.Website == values[0]
 			case "source":
-				match = match && (v.Source == values[0])
+				fieldMatch = v.Source == values[0]
 			case "license":
-				match = match && (v.License == values[0])
+				fieldMatch = v.License == values[0]
 			case "description":
-				match = match && (v.Description == values[0])
+				fieldMatch = v.Description == values[0]
+			case "maintainer":
+				for _, value := range values {
+					parts := strings.SplitN(value, "-", 2)
+					if len(parts) != 2 {
+						continue
+					}
+					name, email := parts[0], parts[1]
+					for _, maintainer := range v.Maintainers {
+						if maintainer.Name == name && maintainer.Email == email {
+							fieldMatch = true
+							break
+						}
+					}
+					if fieldMatch {
+						break
+					}
+				}
 			case "maintainer.name":
-				maintainerMatch := false
 				for _, maintainer := range v.Maintainers {
-					if maintainer.Name == values[0] {
-						maintainerMatch = true
+					for _, value := range values {
+						if maintainer.Name == value {
+							fieldMatch = true
+							break
+						}
+					}
+					if fieldMatch {
+						break
 					}
 				}
-				match = match && maintainerMatch
 			case "maintainer.email":
-				maintainerMatch := false
 				for _, maintainer := range v.Maintainers {
-					if maintainer.Email == values[0] {
-						maintainerMatch = true
+					for _, value := range values {
+						if maintainer.Email == value {
+							fieldMatch = true
+							break
+						}
+					}
+					if fieldMatch {
+						break
 					}
 				}
-				match = match && maintainerMatch
+			}
+
+			if matchType == "and" {
+				match = match && fieldMatch
+			} else { // default to OR logic
+				match = match || fieldMatch
 			}
 		}
+
 		if match {
 			result = append(result, v)
 		}
 	}
-	s.dataMutex.RUnlock()
 
 	if err := yaml.NewEncoder(w).Encode(result); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 }
 
 func (s *Server) Run(addr string) {
